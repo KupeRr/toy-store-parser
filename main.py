@@ -1,15 +1,16 @@
 from time import sleep
+import os
 
 from selenium.webdriver import Chrome
 from selenium import webdriver
 
 MAIN_URL = r'https://zullu.com.ua/product_list'
 
-def connect():
+def connect(url = MAIN_URL):
     options = webdriver.ChromeOptions()
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     driver = Chrome(options=options)
-    driver.get(MAIN_URL)
+    driver.get(url)
     return driver
 
 def get_all_node_links(driver):
@@ -22,8 +23,36 @@ def get_all_node_links(driver):
 
     return links
 
+def save_image(code, num, link):
+    driver = connect(link)
+    with open(f'images/{code}/img_{num}.png', 'wb') as file:
+        file.write(driver.find_element_by_tag_name('img').screenshot_as_png)
+    driver.close()
+
+def save_item_images(code, driver):
+    if not os.path.isdir('images'): os.mkdir('images')
+    if not os.path.isdir(f'images/{code}'): os.mkdir(f'images/{code}')
+
+    driver.find_element_by_class_name('b-product-image__img').click()
+    sleep(1)
+
+    num = int(driver.find_element_by_class_name('b-images-view__header').text.split()[-1])
+    save_image(code, 1, driver.find_element_by_class_name('b-images-view__photo').get_attribute('src'))
+
+    while True:
+        driver.find_element_by_class_name('b-images-view__button_direction_right').click()
+        sleep(1)
+
+        num = int(driver.find_element_by_class_name('b-images-view__header').text.split()[-1])
+
+        if num == 1: break
+
+        save_image(code, num, driver.find_element_by_class_name('b-images-view__photo').get_attribute('src'))
+
 def get_item_data(driver, link):
     driver.get(link)
+
+    article = driver.find_element_by_class_name('b-product-data__item_type_sku').find_element_by_tag_name('span').text
 
     path_items = driver.find_element_by_class_name('breadcrumbs-1WtpdcnpBj').find_elements_by_class_name('link-2YsvoQ35xR')[1:]
 
@@ -44,16 +73,20 @@ def get_item_data(driver, link):
     for i in range(0, len(attribute_cells), 2):
         attribute += f'{attribute_cells[i].text}:{attribute_cells[i+1].text} '
 
-    return {
+    item_data = {
         'name'          : driver.find_element_by_class_name('b-title_type_product').find_element_by_tag_name('span').text,
         'price'         : driver.find_element_by_class_name('b-product-cost__price').find_element_by_tag_name('span').text,
         'available'     : driver.find_element_by_class_name('b-product-data__item_type_available').text,
-        'article'       : driver.find_element_by_class_name('b-product-data__item_type_sku').find_element_by_tag_name('span').text,
+        'article'       : article,
         'path'          : path,
         'description'   : description,
         'attribute'     : attribute,
         'link'          : link,
     }
+
+    save_item_images(article, driver)
+
+    return item_data
 
 def load_all_items(driver, link):
     driver.get(link)
