@@ -1,8 +1,10 @@
 from time import sleep
 import os
 
-from selenium.webdriver import Chrome
 from selenium import webdriver
+from selenium.webdriver import Chrome
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import ElementNotInteractableException
 
 MAIN_URL = r'https://zullu.com.ua/product_list'
 
@@ -73,6 +75,20 @@ def get_item_data(driver, link):
     for i in range(0, len(attribute_cells), 2):
         attribute += f'{attribute_cells[i].text}:{attribute_cells[i+1].text} '
 
+    driver.find_element_by_tag_name('html').send_keys(Keys.END)
+    sleep(1)
+
+    referral = set()
+    while driver.find_element_by_class_name('b-carousel__button_type_next').get_attribute('class').split()[-1] == 'b-carousel__button_state_active':
+        referral_items = driver.find_elements_by_class_name('b-carousel__holder')[0].find_elements_by_class_name('b-carousel__title')
+
+        for item in referral_items:
+            referral.add(item.text)
+
+        driver.find_element_by_class_name('b-carousel__button_type_next').click()
+
+    referral.remove('')
+
     item_data = {
         'name'          : driver.find_element_by_class_name('b-title_type_product').find_element_by_tag_name('span').text,
         'price'         : driver.find_element_by_class_name('b-product-cost__price').find_element_by_tag_name('span').text,
@@ -82,6 +98,7 @@ def get_item_data(driver, link):
         'description'   : description,
         'attribute'     : attribute,
         'link'          : link,
+        'referral'      : referral
     }
 
     save_item_images(article, driver)
