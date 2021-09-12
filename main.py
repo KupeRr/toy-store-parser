@@ -8,8 +8,15 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotInterac
 
 MAIN_URL = r'https://zullu.com.ua/product_list'
 
-
 def connect(url = MAIN_URL):
+    """
+    The function establishes connections and goes to the specified link, by default connects to the home page of the site
+
+    @param url - page to connect to
+
+    @return the driver
+    """
+
     options = webdriver.ChromeOptions()
 
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -26,6 +33,14 @@ def connect(url = MAIN_URL):
 
 
 def get_all_node_links(driver):
+    """
+    The function collects all links pointing to catalogs with products.
+
+    @param driver - the driver of the current connection
+
+    @return links to catalogs
+    """
+
     sleep(1)
     nodes = driver.find_element_by_class_name('b-product-groups-gallery').find_elements_by_tag_name('li')
 
@@ -37,6 +52,14 @@ def get_all_node_links(driver):
 
 
 def save_image(code, num, link):
+    """
+    The function saves the specified image
+
+    @param code - product part number
+    @param num - image number
+    @param link - link to image source
+    """
+
     if os.path.isfile(f'images/{code}/img_{num}.png'): return
 
     driver = connect(link)
@@ -48,6 +71,13 @@ def save_image(code, num, link):
 
 
 def save_item_images(code, driver):
+    """
+    The function saves all images of the current product
+
+    @param code - product part number
+    @param driver - current connection driver
+    """
+
     if not os.path.isdir('images'): os.mkdir('images')
     if not os.path.isdir(f'images/{code}'): os.mkdir(f'images/{code}')
 
@@ -88,6 +118,14 @@ def save_item_images(code, driver):
 
 
 def get_item_data(link):
+    """
+    The function collects all data of the current product and saves its images
+
+    @param link - product link
+
+    @return data in dictionary format
+    """
+
     driver = connect(link)
     sleep(1)
     
@@ -184,6 +222,14 @@ def get_item_data(link):
 
 
 def load_all_items(link):
+    """
+    The function collects data on all products in the current catalog
+
+    @param link - link to the catalog
+
+    @return array of data in dictionary format
+    """
+
     driver = connect(link)
 
     items_on_page = driver.find_element_by_class_name('b-product-gallery').find_elements_by_tag_name('li')
@@ -195,16 +241,29 @@ def load_all_items(link):
         item_link = item.find_element_by_class_name('b-product-gallery__image-link').get_attribute('href')
         data.append(get_item_data(item_link))
         
-        break ### Тестовое ограничение на 1 элемент [!!!]
-
     driver.close()
 
     return data
 
 def delete_wrong_symbols(str):
+    """
+    The function removes invalid characters from the string
+
+    @param str - string
+
+    @return valid string
+    """
+
     return str.encode(encoding="cp1251", errors="ignore").decode(encoding="cp1251", errors="ignore")
 
 def save_data(file, data):
+    """
+    The function saves data to a tab-delimited file
+
+    @param file - the file into which you want to save data
+    @param data - array of data in dictionary format
+    """
+
     for item in data:
         buff = ''
         for ref in item['referral']:
@@ -238,8 +297,6 @@ def main():
             print('Saving data into table...')
             save_data(file, items_data)
             
-            #break ### Тестовое ограничение на 1 элемент [!!!]
-
     print('Power off')
     
 
